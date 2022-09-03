@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.geancarloleiva.jetcomptrivia_13">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".TriviaApplication"
         android:allowBackup="true"
