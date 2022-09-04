@@ -38,6 +38,10 @@ fun TriviaHome(viewModel: QuestionViewModel = hiltViewModel()) {
 @Composable
 fun TriviaQuestions(viewModel: QuestionViewModel) {
     val questions = viewModel.data.value.data?.toMutableList()
+    val questionIndex = remember {
+        mutableStateOf(0)
+    }
+
     if (viewModel.data.value.loading == true) {
         Log.d("QUESTION", "TriviaQuestions: is loading...")
         CircularProgressIndicator()
@@ -46,27 +50,39 @@ fun TriviaQuestions(viewModel: QuestionViewModel) {
         /*questions?.forEach { questionItem ->
             Log.d("QUESTION", "Items: ${questionItem.question}")
         }*/
-        if(questions != null){
-            QuestionDisplay(questionItem = questions.first()
-//                , questionIndex = , viewModel = , onNextClicked =
-            )
+
+        val question = try {
+            questions?.get(questionIndex.value)
+        } catch (e: Exception) {
+            Log.e("ERROR", "TriviaQuestions: ${e.localizedMessage}")
+            null
+        }
+
+        if (questions != null) {
+            QuestionDisplay(
+                totalQuestions = questions.size,
+                questionItem = question!!,
+                questionIndex = questionIndex,
+                viewModel = viewModel
+            ){
+                questionIndex.value = questionIndex.value + 1
+            }
         }
     }
 }
 
 @Composable
 fun QuestionDisplay(
-    questionItem: QuestionItem
-//    ,
-//    questionIndex: MutableState<Int>,
-//    viewModel: QuestionViewModel,
-//    onNextClicked: (Int) -> Unit
+    totalQuestions: Int,
+    questionItem: QuestionItem,
+    questionIndex: MutableState<Int>,
+    viewModel: QuestionViewModel,
+    onNextClicked: (Int) -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(4.dp),
+            .fillMaxHeight(),
         color = AppColors.myDarkPurple
     ) {
         Column(
@@ -75,7 +91,7 @@ fun QuestionDisplay(
             horizontalAlignment = Alignment.Start
         ) {
             //Header
-            QuestionHeader()
+            QuestionHeader(counter = questionIndex.value, outOf = totalQuestions)
 
             //Separator
             val pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
@@ -85,6 +101,9 @@ fun QuestionDisplay(
             QuestionAsIs(questionItem.question)
             //Choices
             ChoicesForQuestion(questionItem = questionItem)
+
+            //Continue
+            QuestionContinue(questionIndex, onNextClicked)
         }
     }
 }
@@ -104,7 +123,7 @@ fun QuestionHeader(
                 )
             ) {
                 //Big text style
-                append("Question $counter/")
+                append("Question ${counter+1}/")
 
                 //Small text style
                 withStyle(
@@ -216,7 +235,56 @@ fun ChoicesForQuestion(questionItem: QuestionItem) {
                     }
                 )
             )
-            Text(text = answerText)
+
+            val annotatedString = buildAnnotatedString {
+                withStyle(
+                    style = SpanStyle(
+                        fontWeight = FontWeight.Light,
+                        color = if (correctAnswerState.value == true
+                            && index == answerState.value
+                        ) {
+                            Color.Green
+                        } else if (correctAnswerState.value == false
+                            && index == answerState.value
+                        ) {
+                            Color.Red
+                        } else {
+                            AppColors.myOffWhite
+                        }
+                    )
+                ) {
+                    append(answerText)
+                }
+            }
+            Text(text = annotatedString, modifier = Modifier.padding(6.dp))
+        }
+    }
+}
+
+@Composable
+fun QuestionContinue(
+    questionIndex: MutableState<Int>,
+    onNextClicked: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Button(
+            onClick = { onNextClicked(questionIndex.value) },
+            modifier = Modifier.padding(6.dp),
+            shape = RoundedCornerShape(34.dp),
+            colors = ButtonDefaults.buttonColors(
+                backgroundColor = AppColors.myLightBlue
+            )
+        ) {
+            Text(
+                text = "Next", modifier = Modifier.padding(4.dp),
+                color = AppColors.myOffWhite,
+                fontSize = 17.sp
+            )
         }
     }
 }
